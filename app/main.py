@@ -15,7 +15,6 @@ def run_app(key, dev_mode=False):
     avaliable_functions = ["add", "check_name", "exit", "save"]
     while True:
         status = elm.begin_run()
-        print(1)
         if status['func'] == "start":
             next_function = input(
                 "Enter 'add' to add or update data, "
@@ -32,12 +31,11 @@ def run_app(key, dev_mode=False):
         elif status['func'] == "exit":
             break
         elif status['func'] == 'add':
-            # name, phone_number = ask_data()
             if dev_mode:
                 username, phone_number = ask_data()
             else:
-                username = status["inputs"]["username"]
-                phone_number = status["inputs"]["phone_number"]
+                username = status["inputs"].get('username', '')
+                phone_number = status["inputs"].get("phone_number", '')
             updates = []
             creates = []
             query = ['username', 'eq', username]
@@ -59,7 +57,7 @@ def run_app(key, dev_mode=False):
             if dev_mode:
                 username = ask_username()
             else:
-                username = status["inputs"]["username"]
+                username = status["inputs"].get('username', '')
             data = elm.db_read(1, ['username', 'eq', username], limit=3)
             try:
                 message = data[0]['phone_number']
@@ -75,7 +73,7 @@ def run_app(key, dev_mode=False):
             if dev_mode:
                 username = ask_username()
             else:
-                username = status["inputs"]["username"]
+                username = status["inputs"].get('username', '')
             data = elm.db_read(1, ['username', 'eq', username], limit=3)
             try:
                 message = data[0]['phone_number']
@@ -88,7 +86,7 @@ def run_app(key, dev_mode=False):
                     fname = "{0}/{1}.xlsx".format("/tmp", binascii.b2a_hex(os.urandom(17)).decode("utf-8"))
                     workbook.save(fname)
                     key = elm.file_upload(fname)
-                    output_link = elm.file_download_link(key, "sample.xlsx")
+                    output_link = elm.file_download_link(key, "Sample.xlsx")
                     message = output_link
 
             except:
