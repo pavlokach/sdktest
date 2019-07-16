@@ -16,11 +16,19 @@ def run_app(key, dev_mode=False):
     while True:
         status = elm.begin_run()
         if status['func'] == "start":
-            next_function = input(
-                "Enter 'add' to add or update data, "
-                "'check_name' to get a number for a name, "
-                "'save' to save it or "
-                "'exit' to close: ")
+            elm.end_run(message="What would you like to do?", continue_run=dict(func='after_choice',
+                                                                                inputs=[dict(name="choice",
+                                                                                             options=avaliable_functions)]))
+
+        if status['func'] == "after_choice":
+            if dev_mode:
+                next_function = input(
+                    "Enter 'add' to add or update data, "
+                    "'check_name' to get a number for a name, "
+                    "'save' to save it or "
+                    "'exit' to close: ")
+            else:
+                next_function = status["inputs"].get('choice', '')
             if next_function in avaliable_functions:
                 status['func'] = next_function
                 inputs = get_inputs(next_function)
