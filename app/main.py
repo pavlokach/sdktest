@@ -1,17 +1,27 @@
+import binascii
+import os
 from elmsdk import ELMSDK
 import sys
+import xlwt
 
 
-def run_app(key, run_func):
-    elm = ELMSDK(key, dev_mode=True)
-    elm.setup_dev_run(run_func)
+def run_app(key, dev_mode=False):
+    if dev_mode:
+        elm = ELMSDK(key, dev_mode=True)
+        elm.setup_dev_run(dev_mode)
+    else:
+        elm = ELMSDK(key)
 
-    avaliable_functions = ["add", "check_name", "exit"]
+    avaliable_functions = ["add", "check_name", "exit", "save"]
     while True:
         status = elm.begin_run()
+        print(1)
         if status['func'] == "start":
             next_function = input(
-                "Enter 'add' to add or update data, 'check_name' to get a number for a name or 'exit' to close: ")
+                "Enter 'add' to add or update data, "
+                "'check_name' to get a number for a name, "
+                "'save' to save it or "
+                "'exit' to close: ")
             if next_function in avaliable_functions:
                 status['func'] = next_function
                 inputs = get_inputs(next_function)
@@ -23,8 +33,11 @@ def run_app(key, run_func):
             break
         elif status['func'] == 'add':
             # name, phone_number = ask_data()
-            username = status["inputs"]["username"]
-            phone_number = status["inputs"]["phone_number"]
+            if dev_mode:
+                username, phone_number = ask_data()
+            else:
+                username = status["inputs"]["username"]
+                phone_number = status["inputs"]["phone_number"]
             updates = []
             creates = []
             query = ['username', 'eq', username]
@@ -36,27 +49,67 @@ def run_app(key, run_func):
             else:
                 to_add = {'username': username, 'phone_number': phone_number}
                 creates.append(dict(table=1, is_global=False, data=to_add))
-            elm.end_run(message='Your information has been saved', continue_run={'func': "start"}, db_updates=updates,
-                        db_creates=creates)
+            if dev_mode:
+                elm.end_run(message='Your information has been saved', continue_run={'func': "start"},
+                            db_updates=updates, db_creates=creates)
+            else:
+                elm.end_run(message='Your information has been saved', db_updates=updates, db_creates=creates)
+
         elif status['func'] == 'check_name':
-            username = status["inputs"]["username"]
+            if dev_mode:
+                username = ask_username()
+            else:
+                username = status["inputs"]["username"]
             data = elm.db_read(1, ['username', 'eq', username], limit=3)
             try:
-                print(data[0]['phone_number'])
+                message = data[0]['phone_number']
             except:
-                print("No records")
-            elm.end_run(message='Name checked', continue_run={'func': "start"})
+                message = "No records"
+            if dev_mode:
+                print(message)
+                elm.end_run(message=message, continue_run={'func': "start"})
+            else:
+                elm.end_run(message=message)
+
+        elif status['func'] == 'save':
+            if dev_mode:
+                username = ask_username()
+            else:
+                username = status["inputs"]["username"]
+            data = elm.db_read(1, ['username', 'eq', username], limit=3)
+            try:
+                message = data[0]['phone_number']
+
+                if dev_mode:
+                    workbook = xlwt.Workbook(encoding='ascii')
+                    worksheet = workbook.add_sheet('My Worksheet')
+                    worksheet.write(0, 0, username)
+                    worksheet.write(0, 1, message)
+                    fname = "{0}/{1}.xlsx".format("/tmp", binascii.b2a_hex(os.urandom(17)).decode("utf-8"))
+                    workbook.save(fname)
+                    key = elm.file_upload(fname)
+                    output_link = elm.file_download_link(key, "sample.xlsx")
+                    message = output_link
+
+            except:
+                message = "No records"
+
+            if dev_mode:
+                print(message)
+                elm.end_run(message=message, continue_run={'func': "start"})
+            else:
+                elm.end_run(message=message)
 
 
-# def ask_username():
-#     username = input("Please input name: ")
-#     return username
-#
-#
-# def ask_data():
-#     username = ask_username()
-#     phone_number = input("Please input phone number: ")
-#     return username, phone_number
+def ask_username():
+    username = input("Please input name: ")
+    return username
+
+
+def ask_data():
+    username = ask_username()
+    phone_number = input("Please input phone number: ")
+    return username, phone_number
 
 
 def get_inputs(func):
@@ -91,4 +144,7 @@ def get_exit_inputs():
 
 
 if __name__ == '__main__':
-    run_app(sys.argv[1], sys.argv[2])
+    if len(sys.argv) > 2:
+        run_app(sys.argv[1], sys.argv[2])
+    else:
+        run_app(sys.argv[1])
