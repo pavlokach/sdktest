@@ -7,7 +7,7 @@ import xlwt
 
 def run_app(key, dev_mode=False):
     if dev_mode:
-        elm = ELMSDK(key, url_override='https://wrp.pagekite.me', dev_mode=True)
+        elm = ELMSDK(key, dev_mode=True)
         elm.setup_dev_run(dev_mode)
     else:
         elm = ELMSDK(key, url_override='https://wrp.pagekite.me')
@@ -66,7 +66,7 @@ def run_app(key, dev_mode=False):
                 elm.end_run(message='Your information has been saved', continue_run={'func': "start"},
                             db_updates=updates, db_creates=creates)
             else:
-                elm.end_run(message='Your information has been saved', db_updates=updates, db_creates=creates)
+                elm.end_run(message='Your information has been saved', db_updates=updates, db_creates=creates, continue_run={'func': "start"})
 
         elif status['func'] == 'check_name':
             if dev_mode:
@@ -82,7 +82,7 @@ def run_app(key, dev_mode=False):
                 print(message)
                 elm.end_run(message=message, continue_run={'func': "start"})
             else:
-                elm.end_run(message=message)
+                elm.end_run(message=message, continue_run={'func': "start"})
 
         elif status['func'] == 'save':
             if dev_mode:
@@ -111,7 +111,7 @@ def run_app(key, dev_mode=False):
                 print(message)
                 elm.end_run(message=message, continue_run={'func': "start"})
             else:
-                elm.end_run(message=message)
+                elm.end_run(message=message, continue_run={'func': "start"})
 
 
 def ask_username():
