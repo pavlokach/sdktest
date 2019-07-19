@@ -7,18 +7,25 @@ import xlwt
 
 def run_app(key, dev_mode=False):
     if dev_mode:
-        elm = ELMSDK(key, dev_mode=True)
+        elm = ELMSDK(key, url_override='https://wrp.pagekite.me', dev_mode=True)
         elm.setup_dev_run(dev_mode)
     else:
-        elm = ELMSDK(key)
+        elm = ELMSDK(key, url_override='https://wrp.pagekite.me')
 
     avaliable_functions = ["add", "check_name", "exit", "save"]
+    menu = [
+        ['check_name', 'Find a number for name'],
+        ['add', 'Add_number'],
+        ['save', 'Save data'],
+        ['exit', 'Exit']
+    ]
+
     while True:
         status = elm.begin_run()
         if status['func'] == "start":
             elm.end_run(message="What would you like to do?", continue_run=dict(func='after_choice',
                                                                                 inputs=[dict(name="choice",
-                                                                                             options=avaliable_functions)]))
+                                                                                             options=menu)]))
 
         if status['func'] == "after_choice":
             if dev_mode:
