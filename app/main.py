@@ -10,7 +10,7 @@ def run_app(key, dev_mode=False):
         elm = ELMSDK(key, dev_mode=True)
         elm.setup_dev_run(dev_mode)
     else:
-        elm = ELMSDK(key, url_override='https://wrp.pagekite.me')
+        elm = ELMSDK(key)
 
     avaliable_functions = ["add", "check_name", "exit", "save"]
     menu = [
@@ -39,12 +39,16 @@ def run_app(key, dev_mode=False):
             if next_function in avaliable_functions:
                 status['func'] = next_function
                 inputs = get_inputs(next_function)
-                elm.end_run(message='Please input the following information',
-                            continue_run={'func': next_function, 'inputs': inputs})
+                if inputs:
+                    elm.end_run(message='Please input the following information',
+                                continue_run={'func': next_function, 'inputs': inputs})
+                else:
+                    elm.end_run(message="Click 'Run' to continue",
+                                continue_run={'func': next_function})
             else:
                 elm.end_run(message='Invalid input', continue_run={'func': "start"})
         elif status['func'] == "exit":
-            break
+            elm.end_run(message='Thanks for using our tools.')
         elif status['func'] == 'add':
             if dev_mode:
                 username, phone_number = ask_data()
@@ -66,7 +70,8 @@ def run_app(key, dev_mode=False):
                 elm.end_run(message='Your information has been saved', continue_run={'func': "start"},
                             db_updates=updates, db_creates=creates)
             else:
-                elm.end_run(message='Your information has been saved', db_updates=updates, db_creates=creates, continue_run={'func': "start"})
+                elm.end_run(message='Your information has been saved', db_updates=updates, db_creates=creates,
+                            continue_run={'func': "start"})
 
         elif status['func'] == 'check_name':
             if dev_mode:
@@ -85,33 +90,25 @@ def run_app(key, dev_mode=False):
                 elm.end_run(message=message, continue_run={'func': "start"})
 
         elif status['func'] == 'save':
-            if dev_mode:
-                username = ask_username()
-            else:
-                username = status["inputs"].get('username', '')
-            data = elm.db_read(1, ['username', 'eq', username], limit=3)
-            try:
-                message = data[0]['phone_number']
-
-                if dev_mode:
-                    workbook = xlwt.Workbook(encoding='ascii')
-                    worksheet = workbook.add_sheet('My Worksheet')
-                    worksheet.write(0, 0, username)
-                    worksheet.write(0, 1, message)
-                    fname = "{0}/{1}.xlsx".format("/tmp", binascii.b2a_hex(os.urandom(17)).decode("utf-8"))
-                    workbook.save(fname)
-                    key = elm.file_upload(fname)
-                    output_link = elm.file_download_link(key, "Sample.xlsx")
-                    message = output_link
-
-            except:
-                message = "No records"
+            # data = elm.db_read(1, ['username', 'eq', username], limit=3)
+            data = elm.db_read(1, [])
+            workbook = xlwt.Workbook(encoding='ascii')
+            worksheet = workbook.add_sheet('My Worksheet')
+            for i in range(len(data)):
+                elem = data[i]
+                worksheet.write(i, 0, elem["username"])
+                worksheet.write(i, 1, elem["phone_number"])
+            fname = "{0}/{1}.xlsx".format("/tmp", binascii.b2a_hex(os.urandom(17)).decode("utf-8"))
+            workbook.save(fname)
+            key = elm.file_upload(fname)
+            output_link = elm.file_download_link(key, "Data.xlsx")
+            message = "Data is saved"
 
             if dev_mode:
-                print(message)
+                print(output_link)
                 elm.end_run(message=message, continue_run={'func': "start"})
             else:
-                elm.end_run(message=message, continue_run={'func': "start"})
+                elm.end_run(message=message, link=output_link, continue_run={'func': "start"})
 
 
 def ask_username():
@@ -130,8 +127,10 @@ def get_inputs(func):
         inputs = get_add_inputs()
     elif func == "check_name":
         inputs = get_check_inputs()
+    elif func == "save":
+        inputs = []
     else:
-        inputs = get_exit_inputs()
+        inputs = []
     return inputs
 
 
@@ -148,11 +147,6 @@ def get_check_inputs():
     inputs = [{
         'name': 'username'
     }]
-    return inputs
-
-
-def get_exit_inputs():
-    inputs = []
     return inputs
 
 
